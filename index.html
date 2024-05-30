@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase Data Entry</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        h1, h2 {
+            text-align: center;
+        }
+
+        form {
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+
+        button[type="submit"] {
+            width: 100%;
+            padding: 10px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        #dataDisplay {
+            max-width: 600px;
+            margin: 20px auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 8px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        @media (max-width: 480px) {
+            form, #dataDisplay {
+                max-width: 100%;
+                padding: 10px;
+            }
+        }
+    </style>
+    
+</head>
+<body>
+    <h1>Enter Data</h1>
+    <form id="dataForm">
+        <div>
+            <label for="dropdown">Name:</label>
+            <select id="dropdown" name="dropdown">
+                <option value="Sunny">Sunny</option>
+                <option value="Sai">Sai</option>
+            </select>
+        </div>
+        <div>
+            <label for="item">Item:</label>
+            <input type="text" id="item" name="item" placeholder="Enter item" required>
+        </div>
+        <div>
+            <label for="cost">Cost:</label>
+            <input type="number" id="cost" name="cost" placeholder="Enter cost" required>
+        </div>
+        <button type="submit">Submit</button>
+    </form>
+
+    <h2>Submitted Data:</h2>
+    <div id="dataDisplay">
+        <table id="dataTable">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Item</th>
+                    <th>Cost</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Data will be populated here -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBmBumYwibi2QWinQiOLZQWOxSVtYL5oXk",
+            authDomain: "form-c2f14.firebaseapp.com",
+            projectId: "form-c2f14",
+            storageBucket: "form-c2f14.appspot.com",
+            messagingSenderId: "865004359404",
+            appId: "1:865004359404:web:ae4ff22f5e01018daddfc9",
+            measurementId: "G-SRTY1EM1JG"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Reference to the form
+        const dataForm = document.getElementById('dataForm');
+        const dropdownInput = document.getElementById('dropdown');
+        const itemInput = document.getElementById('item');
+        const costInput = document.getElementById('cost');
+        const dataDisplay = document.getElementById('dataDisplay');
+
+        // Function to render data
+        function renderData(doc) {
+            const table = document.getElementById('dataTable').getElementsByTagName('tbody')[0];
+            const newRow = table.insertRow(table.rows.length);
+            const cell1 = newRow.insertCell(0);
+            const cell2 = newRow.insertCell(1);
+            const cell3 = newRow.insertCell(2);
+            cell1.textContent = doc.data().name;
+            cell2.textContent = doc.data().item;
+            cell3.textContent = doc.data().cost;
+        }
+
+        // Function to retrieve data from Firestore and render it
+        function loadData() {
+            onSnapshot(collection(db, 'data'), (snapshot) => {
+                document.getElementById('dataTable').getElementsByTagName('tbody')[0].innerHTML = ''; // Clear display
+                snapshot.forEach(doc => {
+                    renderData(doc);
+                });
+            });
+        }
+
+        // Call loadData() when the page loads
+        window.onload = loadData;
+
+        // Listen for form submit
+        dataForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            try {
+                // Add data to Firestore
+                await addDoc(collection(db, 'data'), {
+                    name: dropdownInput.value,
+                    item: itemInput.value,
+                    cost: costInput.value
+                });
+                // Clear the inputs
+                dropdownInput.value = '';
+                itemInput.value = '';
+                costInput.value = '';
+            } catch (error) {
+                console.error('Error adding document: ', error);
+            }
+        });
+    </script>
+</body>
+</html>
