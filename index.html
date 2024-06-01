@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shop</title>
+    <title>Shop-items</title>
 
     <style>
         body {
@@ -134,31 +134,31 @@
         <div>
             <label for="dropdown">Name:</label>
             <select id="dropdown" name="dropdown">
-                <option value="Sunny">Sunny</option>
                 <option value="Sai">Sai</option>
+                <option value="Sunny">Sunny</option>
             </select>
         </div>
         <div>
-            <label for="item">Item:</label>
+            <label for="item">Item</label>
             <input type="text" id="item" name="item" placeholder="Enter item" required>
         </div>
         <div>
-            <label for="cost">Cost:</label>
+            <label for="cost">Cost</label>
             <input type="number" id="cost" name="cost" placeholder="Enter cost" required>
         </div>
         <div>
-            <label for="date">Date:</label>
+            <label for="date">Date</label>
             <input type="date" id="date" name="date" required>
         </div>
         <button type="submit">Submit</button>
-        <button type="button" id="paidButton">Mark All as Paid</button>
+        <button type="button" id="paidButton">Paid</button>
 
         <div id="messageContainer"></div>
     </form>
 
     
 
-    <h2>Submitted Data</h2>
+    <h2>Recent Items</h2>
     <div id="dataDisplay">
         <table id="dataTable">
             <thead>
@@ -280,19 +280,19 @@
                 costInput.value = '';
                 dateInput.value = '';
 
-                displayMessage('Data was submitted successfully', 'success');
+                displayMessage('Item was submitted successfully', 'success');
             } catch (error) {
                 console.error('Error adding document: ', error);
-                displayMessage('Error submitting data', 'error');
+                displayMessage('Error submitting Item', 'error');
             }
         }
     
         // Function to handle "Paid" button click
         async function markAllAsPaid() {
-            const confirmation = confirm("Are you sure you want to clear all data?");
+            const confirmation = confirm("Are you sure you want to clear all Items?");
             if (confirmation) {
                 const password = prompt("Please enter the password:");
-                const correctPassword = "12345"; // Replace with your desired password
+                const correctPassword = "Teja2509"; // Replace with your desired password
                 
                 if (password === correctPassword) {
                     try {
@@ -302,13 +302,13 @@
                         querySnapshot.forEach(async (doc) => {
                             await deleteDoc(doc.ref);
                         });
-                        displayMessage('Data was cleared successfully', 'success');
+                        displayMessage('Items was cleared successfully', 'success');
                     } catch (error) {
                         console.error("Error marking all as paid: ", error);
                         displayMessage('Error clearing data', 'error');
                     }
                 } else {
-                    displayMessage('Incorrect password, data was not cleared', 'error');
+                    displayMessage('Incorrect password, Items was not cleared', 'error');
                 }
             }
         }
