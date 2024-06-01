@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Firebase Data Entry</title>
+    <title>Shop</title>
 
     <style>
         body {
@@ -32,6 +32,7 @@
 
         input[type="text"],
         input[type="number"],
+        input[type="date"],
         select {
             width: 100%;
             padding: 10px;
@@ -41,7 +42,8 @@
             box-sizing: border-box;
         }
 
-        button[type="submit"] {
+        button[type="submit"],
+        button[type="button"] {
             width: 100%;
             padding: 10px;
             background-color: #007bff;
@@ -49,6 +51,7 @@
             border: none;
             border-radius: 5px;
             cursor: pointer;
+            margin-top: 10px;
         }
 
         #dataDisplay {
@@ -71,6 +74,50 @@
             background-color: #f2f2f2;
         }
 
+        #totalCost {
+            text-align: center;
+            font-size: 1.5em;
+            margin-bottom: 20px;
+        }
+
+        .message {
+            text-align: center;
+            font-size: 1em;
+            margin: 10px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        footer {
+            font-size: large;
+            text-align: center;
+            padding: 10px;
+            background-color: #8d8888;
+            left: 0;
+            bottom: 0;
+            width: 100%;
+        }
+        
+        
+        @media (max-width: 480px) {
+            footer {
+                font-size: 0.8em;
+            }
+        }
+        
+
         @media (max-width: 480px) {
             form, #dataDisplay {
                 max-width: 100%;
@@ -78,10 +125,11 @@
             }
         }
     </style>
-    
 </head>
 <body>
-    <h1>Enter Data</h1>
+    <br>
+    <br>
+    <div id="totalCost">Total : 0</div>
     <form id="dataForm">
         <div>
             <label for="dropdown">Name:</label>
@@ -98,10 +146,19 @@
             <label for="cost">Cost:</label>
             <input type="number" id="cost" name="cost" placeholder="Enter cost" required>
         </div>
+        <div>
+            <label for="date">Date:</label>
+            <input type="date" id="date" name="date" required>
+        </div>
         <button type="submit">Submit</button>
+        <button type="button" id="paidButton">Mark All as Paid</button>
+
+        <div id="messageContainer"></div>
     </form>
 
-    <h2>Submitted Data:</h2>
+    
+
+    <h2>Submitted Data</h2>
     <div id="dataDisplay">
         <table id="dataTable">
             <thead>
@@ -109,6 +166,7 @@
                     <th>Name</th>
                     <th>Item</th>
                     <th>Cost</th>
+                    <th>Date</th>
                 </tr>
             </thead>
             <tbody>
@@ -117,12 +175,16 @@
         </table>
     </div>
 
+    <footer>
+        This was developed by YTech
+    </footer>
+
     <!-- Firebase SDKs -->
     <script type="module">
         // Import the functions you need from the SDKs you need
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
+        import { getFirestore, collection, addDoc, doc, onSnapshot, query, orderBy, serverTimestamp, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    
         // Your web app's Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyBmBumYwibi2QWinQiOLZQWOxSVtYL5oXk",
@@ -133,62 +195,133 @@
             appId: "1:865004359404:web:ae4ff22f5e01018daddfc9",
             measurementId: "G-SRTY1EM1JG"
         };
-
+    
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-
+    
         // Reference to the form
         const dataForm = document.getElementById('dataForm');
         const dropdownInput = document.getElementById('dropdown');
         const itemInput = document.getElementById('item');
         const costInput = document.getElementById('cost');
+        const dateInput = document.getElementById('date');
         const dataDisplay = document.getElementById('dataDisplay');
-
+        const totalCostElement = document.getElementById('totalCost');
+        const messageContainer = document.getElementById('messageContainer');
+    
         // Function to render data
         function renderData(doc) {
             const table = document.getElementById('dataTable').getElementsByTagName('tbody')[0];
-            const newRow = table.insertRow(table.rows.length);
+            const newRow = table.insertRow(0); // Insert new rows at the top
             const cell1 = newRow.insertCell(0);
             const cell2 = newRow.insertCell(1);
             const cell3 = newRow.insertCell(2);
+            const cell4 = newRow.insertCell(3);
+    
             cell1.textContent = doc.data().name;
             cell2.textContent = doc.data().item;
             cell3.textContent = doc.data().cost;
+            
+            // Format the date to DD-MM-YYYY
+            const date = new Date(doc.data().date);
+            const formattedDate = `${date.getDate().toString().padStart(2, '0')}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getFullYear()}`;
+            cell4.textContent = formattedDate;
         }
 
+        // Function to calculate and display total cost
+        function calculateTotalCost(snapshot) {
+            let totalCost = 0;
+            snapshot.forEach(doc => {
+                totalCost += parseFloat(doc.data().cost);
+            });
+            totalCostElement.textContent = `Total : ${totalCost.toFixed(2)}`;
+        }
+
+        // Function to display messages
+        function displayMessage(message, type) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            messageDiv.textContent = message;
+            messageContainer.innerHTML = ''; // Clear previous messages
+            messageContainer.appendChild(messageDiv);
+            setTimeout(() => {
+                messageContainer.innerHTML = ''; // Clear message after 3 seconds
+            }, 3000);
+        }
+    
         // Function to retrieve data from Firestore and render it
         function loadData() {
-            onSnapshot(collection(db, 'data'), (snapshot) => {
+            const q = query(collection(db, 'data'), orderBy('timestamp', 'asc'));
+            onSnapshot(q, (snapshot) => {
                 document.getElementById('dataTable').getElementsByTagName('tbody')[0].innerHTML = ''; // Clear display
                 snapshot.forEach(doc => {
                     renderData(doc);
                 });
+                calculateTotalCost(snapshot); // Calculate and display total cost
             });
+        }
+    
+        // Function to handle form submission
+        async function addDataListener(e) {
+            e.preventDefault();
+            try {
+                // Add data to Firestore with a timestamp
+                await addDoc(collection(db, 'data'), {
+                    name: dropdownInput.value,
+                    item: itemInput.value,
+                    cost: costInput.value,
+                    date: dateInput.value,
+                    timestamp: serverTimestamp()
+                });
+                // Clear the inputs
+                dropdownInput.value = 'Sunny';
+                itemInput.value = '';
+                costInput.value = '';
+                dateInput.value = '';
+
+                displayMessage('Data was submitted successfully', 'success');
+            } catch (error) {
+                console.error('Error adding document: ', error);
+                displayMessage('Error submitting data', 'error');
+            }
+        }
+    
+        // Function to handle "Paid" button click
+        async function markAllAsPaid() {
+            const confirmation = confirm("Are you sure you want to clear all data?");
+            if (confirmation) {
+                const password = prompt("Please enter the password:");
+                const correctPassword = "12345"; // Replace with your desired password
+                
+                if (password === correctPassword) {
+                    try {
+                        const dataRef = collection(db, 'data');
+                        const q = query(dataRef);
+                        const querySnapshot = await getDocs(q);
+                        querySnapshot.forEach(async (doc) => {
+                            await deleteDoc(doc.ref);
+                        });
+                        displayMessage('Data was cleared successfully', 'success');
+                    } catch (error) {
+                        console.error("Error marking all as paid: ", error);
+                        displayMessage('Error clearing data', 'error');
+                    }
+                } else {
+                    displayMessage('Incorrect password, data was not cleared', 'error');
+                }
+            }
         }
 
         // Call loadData() when the page loads
         window.onload = loadData;
 
         // Listen for form submit
-        dataForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
+        dataForm.addEventListener('submit', addDataListener);
 
-            try {
-                // Add data to Firestore
-                await addDoc(collection(db, 'data'), {
-                    name: dropdownInput.value,
-                    item: itemInput.value,
-                    cost: costInput.value
-                });
-                // Clear the inputs
-                dropdownInput.value = '';
-                itemInput.value = '';
-                costInput.value = '';
-            } catch (error) {
-                console.error('Error adding document: ', error);
-            }
-        });
+        // Listen for "Paid" button click
+        const paidButton = document.getElementById('paidButton');
+        paidButton.addEventListener('click', markAllAsPaid);
     </script>
 </body>
 </html>
